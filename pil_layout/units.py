@@ -1,3 +1,6 @@
+"core dimension-with-units logic + coordinate pairs"
+# todo: try getting this from a library, maybe pint
+
 from dataclasses import dataclass
 from typing import Union, Optional, Literal, Tuple
 from .common import LayoutError
@@ -5,7 +8,6 @@ from .common import LayoutError
 @dataclass
 class Unit:
     "a number with units. supports some math operations"
-    # todo: try using pint and creating px / dpi types
     n: Union[int, float]
     unit: Optional[Literal['px', 'in']] # only optional when n=0
 

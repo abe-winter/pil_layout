@@ -4,7 +4,7 @@ from typing import List
 from PIL import Image, ImageDraw, ImageFont
 from .base import Layout
 from .units import Dim, Unit
-from .instruction import Instruction
+from .instruction import Instruction, Ilist
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ class Box(Renderable):
         "return 'native size' (unscaled)"
         return Dim(width=self.width, height=self.height)
 
-    def compute(self, dim: Dim, dpi: int) -> List['Instruction']:
+    def compute(self, dim: Dim, dpi: int) -> Ilist:
         return [Instruction.from_dim(self.scaled_dim(self.dim(), dim, self.can_expand), source=self.source())]
 
     @classmethod
@@ -56,7 +56,7 @@ class ImageRenderable(Renderable):
         "return as inches"
         return Dim.inch(self.image.width, self.image.height, unit='px').to_in(dpi)
 
-    def compute(self, dim: Dim, dpi: int) -> List['Instruction']:
+    def compute(self, dim: Dim, dpi: int) -> Ilist:
         scaled = self.scaled_dim(self.dim(dpi), dim)
         scaled_px = scaled.to_px(dpi)
         return [Instruction.from_dim(scaled, self.image.resize(scaled_px.tuple()), source=self.source())]

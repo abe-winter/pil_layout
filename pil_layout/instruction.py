@@ -5,6 +5,8 @@ from PIL import Image, ImageDraw, ImageFont
 from .base import Layout
 from .units import Dim, Unit, Direction, is_horz
 
+logger = logging.getLogger(__name__)
+
 @dataclass
 class Instruction:
     "drawing instruction"
@@ -71,37 +73,44 @@ class Instruction:
     def format(self) -> str:
         return f'topleft: {(self.top, self.left)}, dim: {(self.right - self.left), (self.bottom - self.top)}, image size: {self.image and self.image.size}, source: {self.source and self.source.__class__.__name__}'
 
-def render_instructions(im: Image.Image, ilist: List[Instruction], dpi: int):
-    "render instructions onto image. get instruction list from .compute() method on your outermost Layout object"
-    for inst in ilist:
-        if inst.image:
-            im.paste(inst.image, box=inst.topleft(dpi))
-    return im
+class Ilist(list):
+    "list of Optional[Instruction] with some helper methods"
 
-def ilist_height(ilist: List[Optional[Instruction]]):
-    "height of an instruction list. list members are nullable because of how flex works"
-    return max(inst.bottom for inst in ilist if inst) - min(inst.top for inst in ilist if inst)
+    def render(self, im: Image.Image, dpi: int):
+        "render instructions onto image. get instruction list from .compute() method on your outermost Layout object"
+        for inst in self:
+            if inst.image:
+                im.paste(inst.image, box=inst.topleft(dpi))
+        return im
 
-def ilist_width(ilist: List[Optional[Instruction]]):
-    "width of an instruction list"
-    return max(inst.right for inst in ilist if inst) - min(inst.left for inst in ilist if inst)
+    def height(self):
+        "height of an instruction list. list members are nullable because of how flex works"
+        return max(inst.bottom for inst in self if inst) - min(inst.top for inst in self if inst)
 
-def ilist_dim(direction: Direction):
-    return ilist_width if is_horz(direction) else ilist_height
+    def width(self):
+        "width of an instruction list"
+        return max(inst.right for inst in self if inst) - min(inst.left for inst in self if inst)
 
-def sum_dim(ilist_list: List[List[Instruction]], direction: Direction) -> Dim:
+    def dim(self, direction: Direction):
+        return self.width() if is_horz(direction) else self.height()
+
+    def align(self, direction: Direction, container: Dim, middle: bool = True) -> 'Ilist':
+        "align at middle/end of space on H or V axis, by offseting it. middle=False means end"
+        offset = (container.getdir(direction) - self.dim(direction)) / (2 if middle else 1)
+        logger.debug('aligning middle=%s dir=%s container=%s offset=%s', middle, direction, container, offset)
+        return [inst.offset(offset, direction) for inst in self] if offset.n > 0 else self
+
+def sum_dim(ilist_list: List[Ilist], direction: Direction) -> Dim:
     "sums sizes of sublists. returns a dim with only one axis, aka a directional length"
-    dim_func = ilist_dim(direction)
-    dim = sum((dim_func(sublist) for sublist in ilist_list if sublist), Unit.zero())
+    dim = sum((ilist.dim(direction) for ilist in ilist_list if ilist), Unit.zero())
     return Dim(width=dim) if is_horz(direction) else Dim(height=dim)
 
-def apply_offsets(ilist_list: List[List[Instruction]], direction: Direction, space: Unit) -> List[List[Instruction]]:
+def apply_offsets(ilist_list: List[Ilist], direction: Direction, space: Unit) -> List[Ilist]:
     "layout things sequentially rather than on top of each other"
     total_size = Unit.zero()
-    dim_func = ilist_dim(direction)
     ret = []
     for i, ilist in enumerate(ilist_list):
         offset = total_size + space * i
         ret.append([inst.offset(offset, direction) for inst in ilist])
-        total_size += dim_func(ilist)
+        total_size += ilist.dim(direction)
     return ret

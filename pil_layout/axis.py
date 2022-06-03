@@ -5,7 +5,7 @@ from .base import Layout
 from .units import Direction, Dim, Unit
 from .common import LayoutError, partition
 from .renderable import Box
-from .instruction import sum_dim, apply_offsets, Instruction
+from .instruction import sum_dim, apply_offsets, Instruction, Ilist
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +16,7 @@ class Axis(Layout):
     children: List[Layout]
     expand: bool = False
 
-    def space_ilists(self, dim: Dim, dpi: int, ilist_list: List[List['Instruction']]) -> Unit:
+    def space_ilists(self, dim: Dim, dpi: int, ilist_list: List[Ilist]) -> Unit:
         "compute the space param for apply_offsets + shrink to fit logic"
         if len(ilist_list) < 2:
             return Unit.zero(), ilist_list

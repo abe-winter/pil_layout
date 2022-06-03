@@ -5,7 +5,7 @@ from .base import Layout
 from .renderable import Renderable
 from .units import Dim, Unit, Direction
 from .common import LayoutError
-from .instruction import Instruction, ilist_dim
+from .instruction import Instruction, Ilist
 
 logger = logging.getLogger(__name__)
 
@@ -62,19 +62,13 @@ class AspectRatio(Transform):
         ilist = self.child.compute(inner, dpi)
 
         if self.halign == 'middle':
-            ilist = align_in_space('horz', dim, ilist)
+            ilist = ilist.align('horz', dim)
         elif self.halign == 'end':
-            ilist = align_in_space('horz', dim, ilist, middle=False)
+            ilist = ilist.align('horz', dim, middle=False)
 
         if self.valign == 'middle':
-            ilist = align_in_space('vert', dim, ilist)
+            ilist = ilist.align('vert', dim)
         elif self.valign == 'end':
-            ilist = align_in_space('vert', dim, ilist, middle=False)
+            ilist = ilist.align('vert', dim, middle=False)
 
         return ilist
-
-def align_in_space(direction: Direction, space: Dim, ilist: List['Instruction'], middle: bool = True) -> List['Instruction']:
-    "align ilist at middle/end of space on H or V axis, by offseting it. middle=False means end"
-    offset = (space.getdir(direction) - ilist_dim(direction)(ilist)) / (2 if middle else 1)
-    logger.debug('aligning middle=%s dir=%s space=%s offset=%s', middle, direction, space, offset)
-    return [inst.offset(offset, direction) for inst in ilist] if offset.n > 0 else ilist
