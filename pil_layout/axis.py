@@ -16,8 +16,8 @@ class Axis(Layout):
     children: List[Layout]
     expand: bool = False
 
-    def space_ilists(self, dim: Dim, dpi: int, ilist_list: List[Ilist]) -> Unit:
-        "compute the space param for apply_offsets + shrink to fit logic"
+    def space_ilists(self, dim: Dim, dpi: int, ilist_list: List[Ilist]) -> Tuple[Unit, List[Ilist]]:
+        "complex mix of offset spacing (when too narrow) and shrink to fit (when too wide). split out some logic"
         if len(ilist_list) < 2:
             return Unit.zero(), ilist_list
         axis_dim = dim.getdir(self.direction)
@@ -40,7 +40,7 @@ class Axis(Layout):
                 # todo: don't shrink is_spacer boxes; but the math works out anyway
                 ilist_list = [
                     # wow this is way too complicated
-                    ilist if i in fixed_indices else [inst.shrink(ratio, dpi) for inst in ilist]
+                    ilist if i in fixed_indices else Ilist(inst.shrink(ratio, dpi) for inst in ilist)
                     for i, ilist in enumerate(ilist_list)
                 ]
                 total_dim = sum_dim(ilist_list, self.direction).getdir(self.direction)
@@ -56,7 +56,7 @@ class Axis(Layout):
         ilist_list = [x.compute(subdim, dpi) for x in self.children]
         between_space, ilist_list = self.space_ilists(dim, dpi, ilist_list)
         offset_children = apply_offsets(ilist_list, self.direction, between_space)
-        return sum(offset_children, [])
+        return Ilist.concat(offset_children)
 
 @dataclass
 class Flex(Axis):
@@ -89,14 +89,14 @@ class Flex(Axis):
         # compute the expanded element
         i_expand = self.expand.index(True)
         # note: from_dim instruction is so axis stretches right
-        ilist_list[i_expand] = self.children[i_expand].compute(flex_area, dpi) + [Instruction.from_dim(flex_area, source=self.source())]
+        ilist_list[i_expand] = Ilist(self.children[i_expand].compute(flex_area, dpi) + [Instruction.from_dim(flex_area, source=self.source())])
         return flex_area, ilist_list
 
     def compute(self, dim: Dim, dpi: int):
         _, ilist_list = self.render_flex(dim, dpi)
         between_space, ilist_list = self.space_ilists(dim, dpi, ilist_list)
         offset_children = apply_offsets(ilist_list, self.direction, between_space)
-        return sum(offset_children, [])
+        return Ilist.concat(offset_children)
 
 def split_shrinkable(children: List[Layout]) -> Tuple[List[Tuple[int, Layout]], List[Tuple[int, Layout]]]:
     "return tuple of lists of (index, Layout) pair; lists are (shrinkable, fixed)"

@@ -22,5 +22,5 @@ class Layout(abc.ABC):
         return list(reversed(classes))
 
     @abc.abstractmethod
-    def compute(self, dim: Dim, dpi: int):
+    def compute(self, dim: Dim, dpi: int) -> 'Ilist':
         ...

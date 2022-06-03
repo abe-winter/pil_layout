@@ -23,13 +23,13 @@ class Padding(Transform):
         pad2 = self.pad * 2
         return Dim(outer.width - pad2, outer.height - pad2).nonnegative()
 
-    def compute(self, dim: Dim, dpi: int):
+    def compute(self, dim: Dim, dpi: int) -> Ilist:
         inner = self.inner(dim)
         logger.debug('padding %s - %s = %s', dim, self.pad, inner)
         ilist = self.child.compute(inner, dpi)
         pad2 = Dim(self.pad, self.pad)
         # note: empty full-dim instruction is so the size is correct for equal-layout things. this doesn't work inside partial dim though
-        return [inst.offset2(pad2) for inst in ilist] + [Instruction.from_dim(dim, source=self.source())]
+        return Ilist([inst.offset2(pad2) for inst in ilist] + [Instruction.from_dim(dim, source=self.source())])
 
 StartMiddleEnd = Literal['start', 'middle', 'end']
 

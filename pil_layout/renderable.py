@@ -40,7 +40,7 @@ class Box(Renderable):
         return Dim(width=self.width, height=self.height)
 
     def compute(self, dim: Dim, dpi: int) -> Ilist:
-        return [Instruction.from_dim(self.scaled_dim(self.dim(), dim, self.can_expand), source=self.source())]
+        return Ilist([Instruction.from_dim(self.scaled_dim(self.dim(), dim, self.can_expand), source=self.source())])
 
     @classmethod
     def inch(cls, width, height=None, unit='in', is_spacer: bool = True):
@@ -59,7 +59,7 @@ class ImageRenderable(Renderable):
     def compute(self, dim: Dim, dpi: int) -> Ilist:
         scaled = self.scaled_dim(self.dim(dpi), dim)
         scaled_px = scaled.to_px(dpi)
-        return [Instruction.from_dim(scaled, self.image.resize(scaled_px.tuple()), source=self.source())]
+        return Ilist([Instruction.from_dim(scaled, self.image.resize(scaled_px.tuple()), source=self.source())])
 
 @dataclass
 class Line:
@@ -102,7 +102,7 @@ class TextRenderable(Renderable):
             strlines = [self.text]
         return font, im, draw, strlines
 
-    def compute(self, dim: Dim, dpi: int):
+    def compute(self, dim: Dim, dpi: int) -> Ilist:
         "render text, including wrap"
         font, im, draw, strlines = self.wrap(dim, dpi)
         multiline = '\n'.join(strlines)
@@ -110,4 +110,4 @@ class TextRenderable(Renderable):
         draw.multiline_text((0, 0), multiline, fill='black', font=font, spacing=interline)
         box = draw.multiline_textbbox((0, 0), multiline, font, spacing=interline)
         im = im.crop(box)
-        return [Instruction.from_dim(Dim.inch(im.width, im.height, 'px').to_in(dpi), im, source=self.source())]
+        return Ilist([Instruction.from_dim(Dim.inch(im.width, im.height, 'px').to_in(dpi), im, source=self.source())])
