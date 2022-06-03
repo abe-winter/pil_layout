@@ -2,7 +2,9 @@ import pytest
 from pil_layout import TextRenderable, Unit, Dim
 from . import base
 
+@pytest.mark.noci
 def test_text_wrap():
+    # todo: bundle font for CI
     font = '/usr/share/fonts/truetype/noto/NotoMono-Regular.ttf'
     textr = TextRenderable("I caught a tremendous fish and held him beside the boat, half out of water. He didn't fight; he hadn't fought at all.", font, Unit.inch(0.5))
     args = (Dim.inch(8, None), 200)

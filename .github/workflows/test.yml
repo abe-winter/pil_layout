@@ -21,4 +21,4 @@ jobs:
       - name: Lint
         run: pylint -E pil_layout
       - name: Test
-        run: pytest
+        run: pytest -m "not noci"
